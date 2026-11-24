@@ -5,6 +5,10 @@
   "outputDirectory": "public",
   "rewrites": [
     {
+      "source": "/api/river",
+      "destination": "/api/room?path=river"
+    },
+    {
       "source": "/api/rooms",
       "destination": "/api/room?path=rooms"
     },

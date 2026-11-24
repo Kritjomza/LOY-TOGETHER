@@ -7,6 +7,16 @@ const clean = (value, max) => typeof value === 'string' ? value.trim().slice(0, 
 export default async function handler(req, res) {
   const rawPath = req.query?.path;
   const path = Array.isArray(rawPath) ? rawPath : typeof rawPath === 'string' ? rawPath.split('/').filter(Boolean) : new URL(req.url, 'http://localhost').pathname.split('/').filter(Boolean).slice(1);
+  if (path[0] === 'river' && path.length === 1 && req.method === 'GET') {
+    const base = process.env.SUPABASE_URL, key = process.env.SUPABASE_SECRET_KEY;
+    if (!base || !key) return json(res, 503, { error: 'ยังไม่ได้ตั้งค่าฐานข้อมูล' });
+    try {
+      const response = await fetch(`${base.replace(/\/$/, '')}/rest/v1/loy_rooms?select=style,wishes&floated=eq.true&order=created_at.desc&limit=30`, { headers: { apikey: key } });
+      if (!response.ok) throw new Error('Database request failed: ' + response.status);
+      const rooms = await response.json();
+      return json(res, 200, rooms.map(room => ({ style: room.style, wishes: room.wishes.map(({name, wish}) => ({name, wish})) })));
+    } catch (error) { console.error(error.message); return json(res, 502, { error: 'ไม่สามารถโหลดกระทงได้' }); }
+  }
   if (path[0] !== 'rooms' || path.length > 3) return json(res, 404, { error: 'ไม่พบห้องนี้' });
   const [ , id, action ] = path;
   let operation;

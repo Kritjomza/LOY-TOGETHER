@@ -19,6 +19,7 @@ http.createServer((req,res) => {
           const id = crypto.randomBytes(9).toString('base64url');
           rooms[id] = {id, style: ['lotus','gold','orchid','jasmine'].includes(input.style) ? input.style : 'lotus', wishes: [], floated: false, createdAt: Date.now()}; save(); return send(res,201,rooms[id]);
         }
+        if (req.method === 'GET' && url.pathname === '/api/river') return send(res,200,Object.values(rooms).filter(r=>r.floated).slice(-30).reverse().map(r=>({style:r.style,wishes:r.wishes.map(({name,wish})=>({name,wish}))})));
         const match = url.pathname.match(/^\/api\/rooms\/([\w-]+)(?:\/(wish|float|style))?$/);
         if (!match || !rooms[match[1]]) return send(res,404,{error:'ไม่พบห้องนี้'});
         const room = rooms[match[1]];

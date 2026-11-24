@@ -31,3 +31,10 @@ test('database and missing configuration errors are handled', async () => {
 });
 
 test('rewritten nested URLs reach the room handler', async () => { const id='a'.repeat(24); let route; globalThis.fetch=async url=>{route=url;return {ok:true,json:async()=>({id,wishes:[]})}}; const res=response(); await handler({method:'GET',query:{path:'rooms/'+id}},res); assert.equal(res.code,200); assert.match(route,/loy_get$/); });
+
+test('river returns only floated public fields without room tokens', async () => {
+  let url;
+  globalThis.fetch=async value=>{url=value;return {ok:true,json:async()=>[{style:'lotus',wishes:[{name:'A',wish:'B',token:'secret',ready:true}]}]}};
+  const res=response(); await handler({method:'GET',query:{path:'river'}},res);
+  assert.equal(res.code,200); assert.match(url,/floated=eq.true/); assert.deepEqual(res.body,[{style:'lotus',wishes:[{name:'A',wish:'B'}]}]);
+});
