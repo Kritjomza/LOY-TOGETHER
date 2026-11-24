@@ -15,12 +15,19 @@ export default async function handler(req, res) {
     args = { p_id: randomBytes(18).toString('base64url'), p_style: styles.has(req.body?.style) ? req.body.style : 'lotus' };
   } else if (id && /^[A-Za-z0-9_-]{24}$/.test(id) && req.method === 'GET' && !action) {
     operation = 'get'; args = { p_id: id };
-  } else if (id && /^[A-Za-z0-9_-]{24}$/.test(id) && req.method === 'POST' && action === 'wish') {
-    const name = clean(req.body?.name, 30), wish = clean(req.body?.wish, 200);
-    if (!name || !wish) return json(res, 400, { error: 'กรุณาใส่ชื่อและคำอธิษฐาน' });
-    operation = 'wish'; args = { p_id: id, p_name: name, p_wish: wish };
-  } else if (id && /^[A-Za-z0-9_-]{24}$/.test(id) && req.method === 'POST' && action === 'float') {
-    operation = 'float'; args = { p_id: id };
+  } else if (id && /^[A-Za-z0-9_-]{24}$/.test(id) && req.method === 'POST' && ['wish','float','style'].includes(action)) {
+    const token = clean(req.body?.token, 64);
+    if (!/^[a-f0-9]{64}$/.test(token)) return json(res, 400, { error: 'ข้อมูลผู้เข้าร่วมไม่ถูกต้อง' });
+    operation = action; args = { p_id: id, p_token: token };
+    if (action === 'wish') {
+      const name = clean(req.body?.name, 30), wish = clean(req.body?.wish, 200);
+      if (!name || !wish) return json(res, 400, { error: 'กรุณาใส่ชื่อและคำอธิษฐาน' });
+      args.p_name = name; args.p_wish = wish;
+    }
+    if (action === 'style') {
+      if (!styles.has(req.body?.style)) return json(res, 400, { error: 'ไม่พบกระทงแบบนี้' });
+      args.p_style = req.body.style;
+    }
   } else return json(res, 404, { error: 'ไม่พบห้องนี้' });
 
   const base = process.env.SUPABASE_URL, key = process.env.SUPABASE_SECRET_KEY;

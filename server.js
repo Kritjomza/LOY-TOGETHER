@@ -19,20 +19,31 @@ http.createServer((req,res) => {
           const id = crypto.randomBytes(9).toString('base64url');
           rooms[id] = {id, style: ['lotus','gold','orchid','jasmine'].includes(input.style) ? input.style : 'lotus', wishes: [], floated: false, createdAt: Date.now()}; save(); return send(res,201,rooms[id]);
         }
-        const match = url.pathname.match(/^\/api\/rooms\/([\w-]+)(?:\/(wish|float))?$/);
+        const match = url.pathname.match(/^\/api\/rooms\/([\w-]+)(?:\/(wish|float|style))?$/);
         if (!match || !rooms[match[1]]) return send(res,404,{error:'ไม่พบห้องนี้'});
         const room = rooms[match[1]];
-        if (req.method === 'GET' && !match[2]) return send(res,200,room);
-        if (req.method === 'POST' && match[2] === 'wish') {
-          const name = clean(input.name,30), wish = clean(input.wish,200);
-          if (!name || !wish) return send(res,400,{error:'กรุณาใส่ชื่อและคำอธิษฐาน'});
-          if (room.floated) return send(res,409,{error:'กระทงถูกลอยแล้ว สร้างห้องใหม่เพื่ออธิษฐานอีกครั้ง'});
-          if (room.wishes.length >= 50) return send(res,400,{error:'ห้องนี้มีคำอธิษฐานครบ 50 ข้อแล้ว'});
-          room.wishes.push({name,wish}); save(); return send(res,200,room);
-        }
-        if (req.method === 'POST' && match[2] === 'float') {
-          if (!room.wishes.length) return send(res,400,{error:'เพิ่มคำอธิษฐานก่อนลอยกระทง'});
-          room.floated = true; save(); return send(res,200,room);
+        const view = () => ({...room, wishes: room.wishes.map(({token, ...person}) => person)});
+        if (req.method === 'GET' && !match[2]) return send(res,200,view());
+        if (req.method === 'POST' && ['wish','float','style'].includes(match[2])) {
+          const token = clean(input.token,64);
+          if (!/^[a-f0-9]{64}$/.test(token)) return send(res,400,{error:'ข้อมูลผู้เข้าร่วมไม่ถูกต้อง'});
+          if (room.floated) return send(res,409,{error:'กระทงลอยไปแล้ว'});
+          const person = room.wishes.find(p => p.token === token);
+          if (match[2] === 'wish') {
+            const name=clean(input.name,30), wish=clean(input.wish,200);
+            if (!name || !wish) return send(res,400,{error:'กรุณาใส่ชื่อและคำอธิษฐาน'});
+            if (!person && room.wishes.length >= 2) return send(res,409,{error:'ห้องนี้มีผู้เข้าร่วมครบสองคนแล้ว'});
+            if (person) { person.name=name; person.wish=wish; person.ready=false; }
+            else room.wishes.push({token,name,wish,ready:false});
+          } else if (!person) return send(res,403,{error:'กรุณาใส่ชื่อและคำอธิษฐานก่อน'});
+          else if (match[2] === 'style') {
+            if (!['lotus','gold','orchid','jasmine'].includes(input.style)) return send(res,400,{error:'ไม่พบกระทงแบบนี้'});
+            room.style=input.style; room.wishes.forEach(p => p.ready=false);
+          } else {
+            if (room.wishes.length !== 2) return send(res,409,{error:'รอให้เพื่อนเข้าร่วมก่อน'});
+            person.ready=true; room.floated=room.wishes.every(p => p.ready);
+          }
+          save(); return send(res,200,view());
         }
         return send(res,405,{error:'ไม่รองรับคำขอนี้'});
       } catch (error) { console.error(error); return send(res,500,{error:'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง'}); }
