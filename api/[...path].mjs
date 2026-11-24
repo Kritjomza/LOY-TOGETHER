@@ -5,7 +5,8 @@ const json = (res, status, value) => res.status(status).setHeader('Cache-Control
 const clean = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 
 export default async function handler(req, res) {
-  const path = Array.isArray(req.query.path) ? req.query.path : [req.query.path].filter(Boolean);
+  const rawPath = req.query?.path;
+  const path = Array.isArray(rawPath) ? rawPath : typeof rawPath === 'string' ? rawPath.split('/').filter(Boolean) : new URL(req.url, 'http://localhost').pathname.split('/').filter(Boolean).slice(1);
   if (path[0] !== 'rooms' || path.length > 3) return json(res, 404, { error: 'ไม่พบห้องนี้' });
   const [ , id, action ] = path;
   let operation;
