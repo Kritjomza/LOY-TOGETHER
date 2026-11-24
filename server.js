@@ -49,7 +49,7 @@ http.createServer((req,res) => {
       } catch (error) { console.error(error); return send(res,500,{error:'เกิดข้อผิดพลาด กรุณาลองอีกครั้ง'}); }
     }); return;
   }
-  const files = {'/':'index.html','/index.html':'index.html','/style.css':'style.css','/app.js':'app.js'};
+  const files = {'/':'index.html','/index.html':'index.html','/style.css':'style.css','/client.js':'client.js'};
   const file = files[url.pathname]; if (!file) {res.writeHead(404); return res.end('Not found');}
   const type = file.endsWith('.html') ? 'text/html' : file.endsWith('.css') ? 'text/css' : 'text/javascript';
   res.writeHead(200,{'Content-Type': type + '; charset=utf-8'}); fs.createReadStream(path.join(root,file)).pipe(res);
