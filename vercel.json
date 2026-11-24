@@ -2,5 +2,19 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
   "buildCommand": "npm run build",
-  "outputDirectory": "public"
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/api/rooms",
+      "destination": "/api/room?path=rooms"
+    },
+    {
+      "source": "/api/rooms/:id",
+      "destination": "/api/room?path=rooms/:id"
+    },
+    {
+      "source": "/api/rooms/:id/:action",
+      "destination": "/api/room?path=rooms/:id/:action"
+    }
+  ]
 }
