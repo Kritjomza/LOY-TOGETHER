@@ -1,0 +1,8 @@
+node_modules/
+public/
+rooms.json
+rooms.json.tmp
+.env
+.env.*
+!.env.example
+.vercel/
